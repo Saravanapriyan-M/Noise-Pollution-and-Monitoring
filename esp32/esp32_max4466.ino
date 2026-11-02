@@ -11,21 +11,31 @@
  *
  * Description:
  *   Samples sound waveform over a 50ms window, calculates Root Mean Square
- *   (RMS) voltage and estimated noise level (dB), then sends an HTTP POST
+ *   (RMS) voltage and estimated noise level (dB), then sends an HTTP/HTTPS POST
  *   request every 2 seconds to the FastAPI backend at /api/readings.
  */
 
 #include <Arduino.h>
-#include <HTTPClient.h>
 #include <WiFi.h>
+#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
+
+// ---------------------- Cloud / Local Toggle --------------------
+// Set to 1 to send directly to your deployed Vercel cloud dashboard:
+//   https://noise-pollution-and-monitoring.vercel.app/api/readings
+// Set to 0 to send to your local PC on hotspot (e.g., 10.42.81.129:8000)
+#define USE_VERCEL_CLOUD 1
 
 // ---------------------- WiFi Configuration ----------------------
 const char *ssid = "Saravana's S23 FE";
 const char *password = "11111111";
 
-// ---------------------- Backend Server URL ----------------------
-// Connected to Saravana's S23 FE hotspot (PC IP: 10.42.81.129)
+// ---------------------- Backend Server URLs ---------------------
+#if USE_VERCEL_CLOUD
+const char *serverUrl = "https://noise-pollution-and-monitoring.vercel.app/api/readings";
+#else
 const char *serverUrl = "http://10.42.81.129:8000/api/readings";
+#endif
 
 // ---------------------- Sensor Pin & ADC ------------------------
 const int MIC_PIN = 34;                    // GPIO 34 (ADC1_CH6)
@@ -55,6 +65,8 @@ void setup() {
   Serial.println("\nWiFi Connected!");
   Serial.print("ESP32 IP Address: ");
   Serial.println(WiFi.localIP());
+  Serial.print("Target Server: ");
+  Serial.println(serverUrl);
 }
 
 void loop() {
@@ -96,7 +108,15 @@ void loop() {
   // Send Telemetry to FastAPI Backend
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
+
+#if USE_VERCEL_CLOUD
+    WiFiClientSecure secureClient;
+    secureClient.setInsecure(); // Skip certificate verification for cloud endpoint
+    http.begin(secureClient, serverUrl);
+#else
     http.begin(serverUrl);
+#endif
+
     http.addHeader("Content-Type", "application/json");
 
     // JSON Payload
