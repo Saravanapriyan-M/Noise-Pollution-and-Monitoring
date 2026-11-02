@@ -13,7 +13,7 @@ from typing import Optional, List
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from pydantic import BaseModel, Field
 
 app = FastAPI(
@@ -176,47 +176,51 @@ async def get_history():
     return list(readings_history)
 
 
-def find_static_dir() -> Optional[str]:
-    candidates = [
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public"),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "public"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend"),
-        os.path.join(os.getcwd(), "public"),
-        os.path.join(os.getcwd(), "frontend"),
+def load_file_content(filename: str) -> Optional[str]:
+    # Search all possible directories in order
+    search_dirs = [
+        os.path.dirname(os.path.abspath(__file__)),
+        os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")),
+        os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")),
+        os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public")),
+        os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "api")),
+        os.getcwd(),
+        os.path.normpath(os.path.join(os.getcwd(), "backend")),
+        os.path.normpath(os.path.join(os.getcwd(), "api")),
+        os.path.normpath(os.path.join(os.getcwd(), "frontend")),
+        os.path.normpath(os.path.join(os.getcwd(), "public")),
     ]
-    for c in candidates:
-        if os.path.exists(c) and os.path.exists(os.path.join(c, "index.html")):
-            return c
+    for d in search_dirs:
+        path = os.path.join(d, filename)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception:
+                pass
     return None
 
-# Direct routes for root and assets (ensures Vercel and local always load index.html)
+# Direct routes for root and assets (ensures Vercel and local always return index.html)
 @app.get("/", include_in_schema=False)
 async def serve_index():
-    s_dir = find_static_dir()
-    if s_dir:
-        index_file = os.path.join(s_dir, "index.html")
-        if os.path.exists(index_file):
-            return FileResponse(index_file)
-    return {"status": "Noise Pollution Monitoring System API is running."}
+    content = load_file_content("index.html")
+    if content:
+        return HTMLResponse(content=content)
+    return HTMLResponse(content="<!DOCTYPE html><html><body><h1>Noise Pollution Monitoring System</h1><p>Dashboard is loading...</p></body></html>")
 
 @app.get("/style.css", include_in_schema=False)
 async def serve_style():
-    s_dir = find_static_dir()
-    if s_dir:
-        css_file = os.path.join(s_dir, "style.css")
-        if os.path.exists(css_file):
-            return FileResponse(css_file, media_type="text/css")
-    raise HTTPException(status_code=404, detail="File not found")
+    content = load_file_content("style.css")
+    if content:
+        return Response(content=content, media_type="text/css")
+    raise HTTPException(status_code=404, detail="style.css not found")
 
 @app.get("/app.js", include_in_schema=False)
 async def serve_app_js():
-    s_dir = find_static_dir()
-    if s_dir:
-        js_file = os.path.join(s_dir, "app.js")
-        if os.path.exists(js_file):
-            return FileResponse(js_file, media_type="application/javascript")
-    raise HTTPException(status_code=404, detail="File not found")
+    content = load_file_content("app.js")
+    if content:
+        return Response(content=content, media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="app.js not found")
 
 # Support routes without /api prefix if Vercel function strips /api
 @app.get("/readings", response_model=List[Reading], include_in_schema=False)
@@ -232,9 +236,16 @@ async def post_sensor_reading_no_prefix(data: SensorInput):
     return await post_sensor_reading(data)
 
 # Mount frontend static files directory
-frontend_dir = find_static_dir()
-if frontend_dir:
-    app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+for candidate_dir in [
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "public"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend"),
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public"),
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend"),
+    os.getcwd(),
+]:
+    if os.path.exists(candidate_dir) and os.path.exists(os.path.join(candidate_dir, "index.html")):
+        app.mount("/static", StaticFiles(directory=candidate_dir), name="static")
+        break
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noise Pollution Monitoring System | ESP32 + MAX4466</title>
+    <!-- Modern Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-layout" id="app-layout">
+        
+        <!-- =================================================================
+             1. FIXED LEFT SIDEBAR (ChatGPT-inspired collapsible)
+             ================================================================= -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Sidebar Header & Toggle Button -->
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <div class="brand-icon-box">
+                        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2v20M17 5v14M7 5v14M22 10v4M2 10v4"/>
+                        </svg>
+                    </div>
+                    <div class="sidebar-brand-text">
+                        <span class="brand-title">NoiseGuard</span>
+                        <span class="brand-badge">ESP32</span>
+                    </div>
+                </div>
+                <!-- ChatGPT-style Sidebar Toggle Button -->
+                <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="Toggle sidebar (Ctrl+B)" aria-label="Toggle navigation sidebar">
+                    <svg class="toggle-icon-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                        <path d="M9 3v18M15 9l-3 3 3 3"/>
+                    </svg>
+                    <svg class="toggle-icon-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+                        <path d="M9 3v18M13 15l3-3-3-3"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Sidebar Navigation Links -->
+            <nav class="sidebar-nav">
+                <!-- Group: MAIN -->
+                <div class="nav-group">
+                    <span class="sidebar-section-title">MAIN</span>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="#overview" class="nav-item active" data-page="overview" data-tooltip="Overview">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="7" height="9" x="3" y="3" rx="1"/>
+                                    <rect width="7" height="5" x="14" y="3" rx="1"/>
+                                    <rect width="7" height="9" x="14" y="12" rx="1"/>
+                                    <rect width="7" height="5" x="3" y="16" rx="1"/>
+                                </svg>
+                                <span class="nav-item-text">Overview</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group: MONITORING -->
+                <div class="nav-group">
+                    <span class="sidebar-section-title">MONITORING</span>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="#live" class="nav-item" data-page="live" data-tooltip="Live Noise Monitoring">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                </svg>
+                                <span class="nav-item-text">Live Noise Monitoring</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#rms" class="nav-item" data-page="rms" data-tooltip="RMS Analysis">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                                <span class="nav-item-text">RMS Analysis</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#sensor" class="nav-item" data-page="sensor" data-tooltip="Sensor Status">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                                    <rect x="9" y="9" width="6" height="6"/>
+                                    <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
+                                </svg>
+                                <span class="nav-item-text">Sensor Status</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#analytics" class="nav-item" data-page="analytics" data-tooltip="Noise Analytics">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+                                    <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+                                </svg>
+                                <span class="nav-item-text">Noise Analytics</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group: MANAGEMENT -->
+                <div class="nav-group">
+                    <span class="sidebar-section-title">MANAGEMENT</span>
+                    <ul class="nav-list">
+                        <li>
+                            <a href="#alerts" class="nav-item" data-page="alerts" data-tooltip="Alert History">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                </svg>
+                                <span class="nav-item-text">Alert History</span>
+                                <span class="sidebar-badge" id="sidebar-alert-badge" style="display: none;">0</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#history" class="nav-item" data-page="history" data-tooltip="Historical Data">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 8v4l3 3"/>
+                                    <circle cx="12" cy="12" r="9"/>
+                                </svg>
+                                <span class="nav-item-text">Historical Data</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#reports" class="nav-item" data-page="reports" data-tooltip="Reports">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                                <span class="nav-item-text">Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#settings" class="nav-item" data-page="settings" data-tooltip="Settings">
+                                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                                </svg>
+                                <span class="nav-item-text">Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- BOTTOM SIDEBAR: ESP32, MAX4466, System Info -->
+            <div class="sidebar-bottom">
+                <div class="sidebar-status-item" data-tooltip="ESP32 Telemetry Status">
+                    <div class="status-indicator">
+                        <span class="status-pulse-dot disconnected" id="sidebar-esp32-dot"></span>
+                    </div>
+                    <div class="sidebar-bottom-text">
+                        <span class="status-title">ESP32 Status</span>
+                        <span class="status-value disconnected" id="sidebar-esp32-status">Disconnected</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-status-item" data-tooltip="MAX4466 Sensor on GPIO34">
+                    <div class="status-indicator">
+                        <span class="status-pulse-dot disconnected" id="sidebar-sensor-dot"></span>
+                    </div>
+                    <div class="sidebar-bottom-text">
+                        <span class="status-title">MAX4466 Sensor</span>
+                        <span class="status-value disconnected" id="sidebar-sensor-status">No Signal (GPIO34)</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-status-item" data-tooltip="System Information">
+                    <div class="status-indicator">
+                        <svg class="sys-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                    </div>
+                    <div class="sidebar-bottom-text">
+                        <span class="status-title">Telemetry System</span>
+                        <span class="status-sub">2.0s Polling • v2.0</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Top Bar Header (Shown only on small screens) -->
+        <div class="mobile-topbar" id="mobile-topbar">
+            <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <div class="mobile-brand">
+                <span class="brand-title">NoiseGuard</span>
+                <span class="brand-badge">ESP32</span>
+            </div>
+            <div class="mobile-status-chip">
+                <span class="status-pulse-dot disconnected" id="mobile-status-dot"></span>
+            </div>
+        </div>
+
+        <!-- Backdrop overlay for mobile drawer closing -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+        <!-- =================================================================
+             2. MAIN CONTENT AREA (Smoothly expands when sidebar collapses)
+             ================================================================= -->
+        <main class="main-content" id="main-content">
+            
+            <!-- Main Content Top Header Bar -->
+            <header class="content-header">
+                <div class="header-breadcrumb">
+                    <h1 class="page-title" id="current-page-title">Overview</h1>
+                    <p class="page-subtitle" id="current-page-subtitle">Real-time acoustic noise telemetry &amp; live environmental monitoring</p>
+                </div>
+                <div class="header-actions">
+                    <!-- Sensor Connection Status Chip -->
+                    <div class="status-badge-chip" id="sensor-status-chip">
+                        <span class="status-pulse-dot disconnected" id="header-sensor-dot"></span>
+                        <span class="chip-label">Sensor:</span>
+                        <strong class="chip-state disconnected" id="header-sensor-status-text">Connecting...</strong>
+                    </div>
+
+                    <!-- Last Updated Time Chip -->
+                    <div class="time-badge-chip">
+                        <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <span>Updated: <strong id="header-last-updated-text">--:--:--</strong></span>
+                    </div>
+
+                    <!-- Audio Alert Toggle Button -->
+                    <button class="audio-control-btn" id="audio-toggle-btn" title="Toggle audio alert siren">
+                        <svg class="audio-icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                        </svg>
+                        <svg class="audio-icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <line x1="23" y1="9" x2="17" y2="15"/>
+                            <line x1="17" y1="9" x2="23" y2="15"/>
+                        </svg>
+                        <span id="audio-btn-label">Audio Alert: ON</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- High Noise Warning Banner (Visible when noise > 70 dB) -->
+            <div class="high-noise-alert-banner" id="high-noise-banner" style="display: none;">
+                <div class="alert-icon-box">🚨</div>
+                <div class="alert-text-group">
+                    <div class="alert-headline">HIGH NOISE POLLUTION ALERT</div>
+                    <div class="alert-message">
+                        Excessive acoustic noise level detected exceeding safety threshold! 
+                        Current Reading: <strong id="alert-db-value">-- dB</strong>
+                    </div>
+                </div>
+                <div class="alert-time-tag" id="active-alert-time">Just now</div>
+            </div>
+
+            <!-- Disconnected / Offline Banner -->
+            <div class="disconnected-banner" id="disconnected-banner" style="display: none;">
+                <div class="alert-icon-box">⚠️</div>
+                <div class="alert-text-group">
+                    <div class="alert-headline">NO SENSOR DATA AVAILABLE</div>
+                    <div class="alert-message" id="disconnected-msg">
+                        ESP32 is offline or disconnected. Telemetry signal lost. Please check ESP32 power supply, WiFi connection, and GPIO34 MAX4466 wiring.
+                    </div>
+                </div>
+            </div>
+
+            <!-- =============================================================
+                 PAGE 1: OVERVIEW
+                 ============================================================= -->
+            <section class="page-view active" id="page-overview">
+                <!-- Top Key Metrics Cards -->
+                <div class="metrics-grid">
+                    <!-- Estimated Noise Level Card -->
+                    <div class="card noise-level-card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="card-eyebrow">Acoustic Telemetry</span>
+                                <h2>Estimated Noise Level (dB)</h2>
+                            </div>
+                            <!-- Status Badge (LOW - Green, MEDIUM - Orange, HIGH - Red) -->
+                            <span class="noise-status-badge status-unknown" id="overview-noise-badge">WAITING</span>
+                        </div>
+
+                        <div class="db-display-container">
+                            <div class="db-reading-wrapper">
+                                <span class="db-value" id="overview-current-db">--</span>
+                                <span class="db-unit" id="overview-db-unit">dB</span>
+                            </div>
+                            <div class="scale-bar">
+                                <div class="scale-fill" id="overview-scale-indicator" style="width: 0%;"></div>
+                            </div>
+                            <div class="scale-legend">
+                                <span class="leg-low">● LOW (&lt;50 dB)</span>
+                                <span class="leg-med">● MEDIUM (50-70 dB)</span>
+                                <span class="leg-high">● HIGH (&gt;70 dB)</span>
+                            </div>
+                        </div>
+
+                        <div class="uncalibrated-notice">
+                            <svg class="notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            <span>Values are uncalibrated estimated noise levels derived from MAX4466 analog output on ESP32 GPIO 34.</span>
+                        </div>
+                    </div>
+
+                    <!-- Telemetry & Status Summary Card -->
+                    <div class="card summary-card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="card-eyebrow">Hardware &amp; Alerts</span>
+                                <h2>Telemetry Summary</h2>
+                            </div>
+                        </div>
+
+                        <div class="readings-list">
+                            <!-- RMS Value -->
+                            <div class="reading-row">
+                                <div class="reading-meta">
+                                    <span class="reading-name">Current RMS Voltage</span>
+                                    <span class="reading-subtext">Root Mean Square AC signal</span>
+                                </div>
+                                <div class="reading-val-box">
+                                    <span class="val-number" id="overview-current-rms">--</span>
+                                    <span class="val-unit" id="overview-rms-unit">V</span>
+                                </div>
+                            </div>
+
+                            <!-- Connected Sensors Count -->
+                            <div class="reading-row">
+                                <div class="reading-meta">
+                                    <span class="reading-name">Connected Sensors</span>
+                                    <span class="reading-subtext">MAX4466 on ESP32 GPIO34</span>
+                                </div>
+                                <div class="reading-val-box">
+                                    <span class="state-pill connected" id="overview-sensor-count">1 Active (Analog)</span>
+                                </div>
+                            </div>
+
+                            <!-- ESP32 Status -->
+                            <div class="reading-row">
+                                <div class="reading-meta">
+                                    <span class="reading-name">ESP32 Connection</span>
+                                    <span class="reading-subtext">Microcontroller telemetry state</span>
+                                </div>
+                                <div class="reading-val-box">
+                                    <span class="state-pill disconnected" id="overview-esp32-pill">Checking...</span>
+                                </div>
+                            </div>
+
+                            <!-- Recent Alert -->
+                            <div class="reading-row alert-row">
+                                <div class="reading-meta">
+                                    <span class="reading-name">Recent Noise Alerts</span>
+                                    <span class="reading-subtext" id="overview-recent-alert-subtext">No high noise alerts triggered</span>
+                                </div>
+                                <div class="reading-val-box">
+                                    <span class="alert-status-badge" id="overview-recent-alert-badge">NORMAL</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="quick-nav-pills">
+                            <button class="pill-btn" onclick="navigateToPage('live')">View Live Telemetry &rarr;</button>
+                            <button class="pill-btn" onclick="navigateToPage('rms')">RMS Analysis &rarr;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Noise History Line Chart Card -->
+                <div class="card chart-card">
+                    <div class="chart-header">
+                        <div class="card-title-group">
+                            <span class="card-eyebrow">Real-Time Acoustic Telemetry</span>
+                            <h2>Live Noise History Trend</h2>
+                        </div>
+                        <div class="chart-legend-box">
+                            <span class="threshold-indicator"></span>
+                            <span>70 dB Threshold</span>
+                            <span class="chart-legend-dot"></span>
+                            <span>Estimated dB</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="overviewNoiseChart"></canvas>
+                    </div>
+                    <div class="chart-empty-state" id="overview-chart-empty" style="display: none;">
+                        No telemetry data received yet. Awaiting ESP32 transmission...
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 PAGE 2: LIVE NOISE MONITORING
+                 ============================================================= -->
+            <section class="page-view" id="page-live">
+                <!-- Real-time Hero Display -->
+                <div class="live-hero-grid">
+                    <!-- Live Big dB Gauge Card -->
+                    <div class="card live-gauge-card">
+                        <span class="card-eyebrow">Live Instantaneous Reading</span>
+                        <div class="live-hero-reading">
+                            <span class="live-db-value" id="live-db-val">--</span>
+                            <span class="live-db-unit">dB</span>
+                        </div>
+                        <div class="live-status-pill" id="live-status-badge">WAITING FOR SENSOR</div>
+
+                        <!-- Real-time Visual Audio Meter (LED style bars) -->
+                        <div class="audio-meter-container">
+                            <div class="audio-meter-label">Audio Intensity Meter (30 - 105 dB)</div>
+                            <div class="audio-meter-bar">
+                                <div class="audio-meter-fill" id="live-audio-meter-fill" style="width: 0%;"></div>
+                            </div>
+                            <div class="audio-meter-ticks">
+                                <span>30 dB</span>
+                                <span>50 dB (Med)</span>
+                                <span>70 dB (Alert)</span>
+                                <span>105 dB</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Session Statistics -->
+                    <div class="live-stats-column">
+                        <div class="stat-card">
+                            <div class="stat-icon-wrapper blue">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Session Minimum</span>
+                                <span class="stat-value" id="live-stat-min">-- dB</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon-wrapper red">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Session Maximum</span>
+                                <span class="stat-value" id="live-stat-max">-- dB</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon-wrapper orange">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M7 16V4M12 20V8M17 12V4"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Peak-to-Peak (Vpp) Delta</span>
+                                <span class="stat-value" id="live-stat-p2p">-- dB</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon-wrapper green">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Session Average</span>
+                                <span class="stat-value" id="live-stat-avg">-- dB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Control & Live Stream Table -->
+                <div class="card live-stream-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-eyebrow">Real-Time Data Feed</span>
+                            <h2>Incoming Sensor Packets (Last 10 Packets)</h2>
+                        </div>
+                        <button class="action-btn secondary-btn" id="btn-reset-session" title="Reset Session Min, Max & Average">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                <path d="M3 3v5h5"/>
+                            </svg>
+                            <span>Reset Min/Max Stats</span>
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table" id="live-packets-table">
+                            <thead>
+                                <tr>
+                                    <th>Packet #</th>
+                                    <th>Timestamp</th>
+                                    <th>Est. Noise (dB)</th>
+                                    <th>RMS Voltage (V)</th>
+                                    <th>Category</th>
+                                    <th>Signal Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="live-packets-body">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Awaiting incoming sensor telemetry...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 PAGE 3: RMS ANALYSIS
+                 ============================================================= -->
+            <section class="page-view" id="page-rms">
+                <!-- RMS Metric Cards -->
+                <div class="grid-4">
+                    <div class="stat-card-elevated">
+                        <span class="stat-label">Current Calculated RMS</span>
+                        <div class="stat-hero-value">
+                            <span id="rms-current-val">--</span>
+                            <span class="stat-sub-unit">V</span>
+                        </div>
+                        <span class="stat-footer-text">Instantaneous AC amplitude</span>
+                    </div>
+
+                    <div class="stat-card-elevated">
+                        <span class="stat-label">Average RMS</span>
+                        <div class="stat-hero-value">
+                            <span id="rms-avg-val">--</span>
+                            <span class="stat-sub-unit">V</span>
+                        </div>
+                        <span class="stat-footer-text">Calculated across received samples</span>
+                    </div>
+
+                    <div class="stat-card-elevated">
+                        <span class="stat-label">Minimum RMS</span>
+                        <div class="stat-hero-value">
+                            <span id="rms-min-val">--</span>
+                            <span class="stat-sub-unit">V</span>
+                        </div>
+                        <span class="stat-footer-text">Quietest signal recorded</span>
+                    </div>
+
+                    <div class="stat-card-elevated">
+                        <span class="stat-label">Maximum RMS</span>
+                        <div class="stat-hero-value">
+                            <span id="rms-max-val">--</span>
+                            <span class="stat-sub-unit">V</span>
+                        </div>
+                        <span class="stat-footer-text">Peak acoustic waveform spike</span>
+                    </div>
+                </div>
+
+                <!-- Dedicated RMS Chart -->
+                <div class="card chart-card">
+                    <div class="chart-header">
+                        <div class="card-title-group">
+                            <span class="card-eyebrow">Voltage Telemetry</span>
+                            <h2>Root Mean Square (RMS) Voltage Trend</h2>
+                        </div>
+                        <span class="badge-blue">MAX4466 • 3.3V ADC</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="rmsHistoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- RMS Technical Engineering Explanation -->
+                <div class="card info-box-card">
+                    <div class="card-title-group">
+                        <span class="card-eyebrow">Acoustic Signal Processing</span>
+                        <h2>How RMS Voltage is Calculated on ESP32</h2>
+                    </div>
+                    <p class="explanation-text">
+                        The <strong>MAX4466 electret microphone amplifier</strong> outputs an analog voltage centered at approximately <strong>1.65 V DC bias</strong> (half of the 3.3 V rail).
+                        The ESP32 samples pin <strong>GPIO 34 (ADC1_CH6)</strong> across a <strong>50 ms sample window</strong> (equivalent to a 20 Hz fundamental period).
+                    </p>
+                    <div class="formula-box">
+                        <code>RMS = &radic; ( &Sigma; (V<sub>raw</sub> - 1.65V)&sup2; / N )</code>
+                        <code>Estimated dB &approx; 20 &times; log<sub>10</sub>(RMS / 0.001V)</code>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 PAGE 4: SENSOR STATUS
+                 ============================================================= -->
+            <section class="page-view" id="page-sensor">
+                <div class="grid-2">
+                    <!-- Sensor Hardware Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="card-eyebrow">Sensor Specification</span>
+                                <h2>MAX4466 Sound Sensor</h2>
+                            </div>
+                            <span class="state-pill disconnected" id="sensor-page-status-pill">Offline</span>
+                        </div>
+
+                        <div class="detail-spec-list">
+                            <div class="spec-row">
+                                <span class="spec-label">Sensor Model</span>
+                                <strong class="spec-val">MAX4466 Electret Mic with Op-Amp</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Microcontroller</span>
+                                <strong class="spec-val">ESP32 DevKit (Xtensa 32-bit Dual-Core)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">ESP32 Pin</span>
+                                <strong class="spec-val highlight-blue">GPIO 34 (ADC1_CH6)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">ADC Resolution</span>
+                                <strong class="spec-val">12-bit (0 – 4095)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">ADC Reference Voltage</span>
+                                <strong class="spec-val">3.3 V DC</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Current Connection State</span>
+                                <strong class="spec-val" id="sensor-page-state-text">Checking...</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Last Reading Value</span>
+                                <strong class="spec-val" id="sensor-page-last-val">-- dB / -- V</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Last Communication Time</span>
+                                <strong class="spec-val" id="sensor-page-last-comm">--:--:-- (--s ago)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Telemetry Packets Received</span>
+                                <strong class="spec-val" id="sensor-page-packets-count">0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hardware Wiring & Diagnostics Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="card-eyebrow">Pinout &amp; Diagnostics</span>
+                                <h2>Hardware Wiring Configuration</h2>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table wiring-table">
+                                <thead>
+                                    <tr>
+                                        <th>MAX4466 Pin</th>
+                                        <th>ESP32 Pin</th>
+                                        <th>Signal Function</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>VCC</strong></td>
+                                        <td><code>3.3V</code></td>
+                                        <td>Power supply (clean regulated 3.3V)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>GND</strong></td>
+                                        <td><code>GND</code></td>
+                                        <td>Common ground</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>OUT</strong></td>
+                                        <td><code>GPIO 34</code></td>
+                                        <td>ADC1 input (WiFi-compatible analog channel)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Gain Pot</strong></td>
+                                        <td><em>Trimpot</em></td>
+                                        <td>Adjustable gain (set to approx. 50% midpoint)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="diagnostic-box">
+                            <h4>Diagnostics &amp; Health Watchdog</h4>
+                            <ul class="diag-list">
+                                <li><strong>Watchdog Timeout:</strong> 6.0 seconds (Sensor marked Disconnected if no packet arrives).</li>
+                                <li><strong>WiFi ADC Safety:</strong> GPIO 34 uses ADC1, ensuring continuous ADC sampling while WiFi is active.</li>
+                                <li><strong>Sampling Rate:</strong> 50ms audio sample window every 2000ms HTTP POST cycle.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 PAGE 5: NOISE ANALYTICS
+                 ============================================================= -->
+            <section class="page-view" id="page-analytics">
+                <div class="analytics-top-grid">
+                    <!-- Donut Chart of Classifications -->
+                    <div class="card analytics-chart-card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="card-eyebrow">Classification Breakdown</span>
+                                <h2>Noise Exposure Distribution</h2>
+                            </div>
+                        </div>
+                        <div class="doughnut-wrapper">
+                            <div class="doughnut-canvas-box">
+                                <canvas id="analyticsDoughnutChart"></canvas>
+                            </div>
+                            <div class="doughnut-legend">
+                                <div class="leg-item">
+                                    <span class="leg-dot bg-low"></span>
+                                    <span>LOW (&lt;50 dB):</span>
+                                    <strong id="analytics-low-pct">0%</strong>
+                                </div>
+                                <div class="leg-item">
+                                    <span class="leg-dot bg-med"></span>
+                                    <span>MEDIUM (50–70 dB):</span>
+                                    <strong id="analytics-med-pct">0%</strong>
+                                </div>
+                                <div class="leg-item">
+                                    <span class="leg-dot bg-high"></span>
+                                    <span>HIGH (&gt;70 dB):</span>
+                                    <strong id="analytics-high-pct">0%</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="analytics-metrics-stack">
+                        <div class="analytics-stat-card border-low">
+                            <span class="card-eyebrow">Safe Acoustic Environment</span>
+                            <h3>LOW Class (&lt;50 dB)</h3>
+                            <div class="analytics-stat-number" id="analytics-low-count">0 readings</div>
+                            <p class="analytics-sub">Quiet library, residential background, safe for sustained exposure.</p>
+                        </div>
+
+                        <div class="analytics-stat-card border-med">
+                            <span class="card-eyebrow">Moderate Acoustic Environment</span>
+                            <h3>MEDIUM Class (50–70 dB)</h3>
+                            <div class="analytics-stat-number" id="analytics-med-count">0 readings</div>
+                            <p class="analytics-sub">Normal conversation, office ambience, standard activity levels.</p>
+                        </div>
+
+                        <div class="analytics-stat-card border-high">
+                            <span class="card-eyebrow">Elevated Noise Hazard</span>
+                            <h3>HIGH Class (&gt;70 dB)</h3>
+                            <div class="analytics-stat-number" id="analytics-high-count">0 readings</div>
+                            <p class="analytics-sub">Traffic noise, machinery, triggers automatic audio alert &amp; notifications.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Environmental Guidelines Reference -->
+                <div class="card">
+                    <div class="card-title-group">
+                        <span class="card-eyebrow">Compliance &amp; Standards</span>
+                        <h2>Environmental Acoustic Reference Scale (WHO / OSHA)</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Level (dB)</th>
+                                    <th>Classification</th>
+                                    <th>Common Real-World Examples</th>
+                                    <th>Impact Assessment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>30 – 40 dB</strong></td>
+                                    <td><span class="badge-status low">LOW</span></td>
+                                    <td>Whisper, quiet bedroom, quiet library</td>
+                                    <td>Excellent comfort, peaceful rest</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>40 – 50 dB</strong></td>
+                                    <td><span class="badge-status low">LOW</span></td>
+                                    <td>Quiet office, residential rainfall</td>
+                                    <td>Safe, non-disruptive acoustic zone</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>50 – 70 dB</strong></td>
+                                    <td><span class="badge-status med">MEDIUM</span></td>
+                                    <td>Normal conversation, background radio, air conditioning</td>
+                                    <td>Standard urban activity floor</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>70 – 85 dB</strong></td>
+                                    <td><span class="badge-status high">HIGH</span></td>
+                                    <td>Heavy street traffic, lawn mower, noisy restaurant</td>
+                                    <td>Annoying, potential long-term stress</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>&gt; 85 dB</strong></td>
+                                    <td><span class="badge-status high">CRITICAL</span></td>
+                                    <td>Power tools, sirens, machinery</td>
+                                    <td>OSHA hearing protection threshold</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 PAGE 6: ALERT HISTORY
+                 ============================================================= -->
+            <section class="page-view" id="page-alerts">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-eyebrow">Event Log</span>
+                            <h2>High Noise Alert Incidents (&gt;70 dB)</h2>
+                        </div>
+                        <div class="card-actions-group">
+                            <button class="action-btn secondary-btn" id="btn-export-alerts">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                <span>Export Alerts CSV</span>
+                            </button>
+                            <button class="action-btn danger-btn" id="btn-clear-alerts">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                                <span>Clear Alert History</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search & Filter Bar -->
+                    <div class="filter-controls-bar">
+                        <div class="search-input-wrapper">
+                            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <input type="text" id="alerts-search-input" placeholder="Search alerts by time or dB...">
+                        </div>
+                        <div class="filter-dropdown-wrapper">
+                            <label for="alerts-filter-select">Status:</label>
+                            <select id="alerts-filter-select">
+                                <option value="all">All Incidents</option>
+                                <option value="ACTIVE">ACTIVE Triggered</option>
+                                <option value="RESOLVED">RESOLVED</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Alerts Table -->
+                    <div class="table-responsive">
+                        <table class="data-table" id="alerts-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Incident #</th>
+                                    <th>Timestamp</th>
+                                    <th>Noise Reading (dB)</th>
+                                    <th>RMS Voltage (V)</th>
+                                    <th>Category</th>
+                                    <th>Alert Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alerts-table-body">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No high noise alerts recorded yet. Continuous monitoring active.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 PAGE 7: HISTORICAL DATA
+                 ============================================================= -->
+            <section class="page-view" id="page-history">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <span class="card-eyebrow">Data Records</span>
+                            <h2>Stored Sensor Telemetry Log</h2>
+                        </div>
+                        <div class="card-actions-group">
+                            <span class="records-counter-badge" id="history-total-count">0 Records Stored</span>
+                            <button class="action-btn secondary-btn" id="btn-refresh-history">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"/>
+                                    <polyline points="1 20 1 14 7 14"/>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                                </svg>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search & Filter Controls -->
+                    <div class="filter-controls-bar">
+                        <div class="search-input-wrapper">
+                            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <input type="text" id="history-search-input" placeholder="Search by time, dB, or category...">
+                        </div>
+
+                        <div class="filter-dropdown-wrapper">
+                            <label for="history-category-filter">Category:</label>
+                            <select id="history-category-filter">
+                                <option value="all">All Categories</option>
+                                <option value="LOW">LOW (&lt;50 dB)</option>
+                                <option value="MEDIUM">MEDIUM (50-70 dB)</option>
+                                <option value="HIGH">HIGH (&gt;70 dB)</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-dropdown-wrapper">
+                            <label for="history-page-size">Show:</label>
+                            <select id="history-page-size">
+                                <option value="15">15 rows</option>
+                                <option value="30" selected>30 rows</option>
+                                <option value="50">50 rows</option>
+                                <option value="100">100 rows</option>
+                                <option value="all">All rows</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- History Data Table -->
+                    <div class="table-responsive">
+                        <table class="data-table" id="history-data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Timestamp</th>
+                                    <th>Est. Noise (dB)</th>
+                                    <th>RMS Voltage (V)</th>
+                                    <th>Category</th>
+                                    <th>Sensor State</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">Awaiting sensor data transmission from ESP32...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 PAGE 8: REPORTS
+                 ============================================================= -->
+            <section class="page-view" id="page-reports">
+                <div class="reports-container">
+                    <!-- Export Actions Hub -->
+                    <div class="card report-actions-card">
+                        <div class="card-title-group">
+                            <span class="card-eyebrow">Data Export &amp; Reporting</span>
+                            <h2>Export Stored Sensor Data</h2>
+                        </div>
+                        <p class="explanation-text">
+                            Export actual stored telemetry captured from your ESP32 + MAX4466 sound sensor. Reports reflect genuine acoustic readings stored in the system.
+                        </p>
+
+                        <div class="report-buttons-grid">
+                            <button class="report-export-btn primary" id="btn-download-csv">
+                                <div class="btn-icon-circle">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                </div>
+                                <div class="btn-text-content">
+                                    <span class="btn-main-title">Download CSV Report</span>
+                                    <span class="btn-sub-title">Spreadsheet compatible (.csv)</span>
+                                </div>
+                            </button>
+
+                            <button class="report-export-btn secondary" id="btn-download-json">
+                                <div class="btn-icon-circle">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="16 18 22 12 16 6"/>
+                                        <polyline points="8 6 2 12 8 18"/>
+                                    </svg>
+                                </div>
+                                <div class="btn-text-content">
+                                    <span class="btn-main-title">Download JSON Telemetry</span>
+                                    <span class="btn-sub-title">Raw structured payload (.json)</span>
+                                </div>
+                            </button>
+
+                            <button class="report-export-btn tertiary" id="btn-print-report">
+                                <div class="btn-icon-circle">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 6 2 18 2 18 9"/>
+                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                        <rect x="6" y="14" width="12" height="8"/>
+                                    </svg>
+                                </div>
+                                <div class="btn-text-content">
+                                    <span class="btn-main-title">Print / PDF Summary</span>
+                                    <span class="btn-sub-title">Clean printable summary sheet</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Printable Report Summary Preview -->
+                    <div class="card printable-summary-card" id="printable-summary-section">
+                        <div class="report-preview-header">
+                            <div>
+                                <span class="card-eyebrow">Official Telemetry Summary</span>
+                                <h2>Acoustic Telemetry Report</h2>
+                                <p class="text-muted">Generated from ESP32 &bull; MAX4466 Sensor on GPIO34</p>
+                            </div>
+                            <div class="report-date-badge" id="report-gen-date">--</div>
+                        </div>
+
+                        <div class="report-summary-metrics-grid">
+                            <div class="report-metric-box">
+                                <span class="rep-label">Total Readings Logged</span>
+                                <span class="rep-value" id="report-total-readings">0</span>
+                            </div>
+                            <div class="report-metric-box">
+                                <span class="rep-label">Average Noise Level</span>
+                                <span class="rep-value" id="report-avg-db">-- dB</span>
+                            </div>
+                            <div class="report-metric-box">
+                                <span class="rep-label">Peak Noise Spike</span>
+                                <span class="rep-value highlight-red" id="report-peak-db">-- dB</span>
+                            </div>
+                            <div class="report-metric-box">
+                                <span class="rep-label">Minimum Noise Level</span>
+                                <span class="rep-value highlight-green" id="report-min-db">-- dB</span>
+                            </div>
+                            <div class="report-metric-box">
+                                <span class="rep-label">Total Alert Excursions</span>
+                                <span class="rep-value" id="report-alert-count">0</span>
+                            </div>
+                            <div class="report-metric-box">
+                                <span class="rep-label">Acoustic Assessment</span>
+                                <span class="rep-value" id="report-overall-rating">Compliant</span>
+                            </div>
+                        </div>
+
+                        <div class="report-footer-note">
+                            Noise Pollution Monitoring System &bull; Sensor ADC1_CH6 (GPIO 34) &bull; Root Mean Square 50ms window &bull; Uncalibrated Acoustic Estimate
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- =============================================================
+                 PAGE 9: SETTINGS
+                 ============================================================= -->
+            <section class="page-view" id="page-settings">
+                <div class="settings-grid">
+                    <!-- Threshold Settings Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="card-eyebrow">Threshold &amp; Alarms</span>
+                                <h2>Noise Classification Thresholds</h2>
+                            </div>
+                        </div>
+
+                        <div class="settings-form">
+                            <div class="form-group">
+                                <label for="setting-high-threshold">
+                                    <span>High Noise Alert Threshold (dB):</span>
+                                    <strong class="highlight-red" id="label-high-val">70.0 dB</strong>
+                                </label>
+                                <input type="range" id="setting-high-threshold" min="60" max="95" step="1" value="70">
+                                <span class="form-hint">Triggers prominent red warning and optional Web Audio tone when noise level exceeds this value.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="setting-med-threshold">
+                                    <span>Medium Noise Threshold (dB):</span>
+                                    <strong class="highlight-orange" id="label-med-val">50.0 dB</strong>
+                                </label>
+                                <input type="range" id="setting-med-threshold" min="40" max="65" step="1" value="50">
+                                <span class="form-hint">Noise levels below this are classified as LOW (Green); levels above are classified as MEDIUM (Orange).</span>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="toggle-switch-wrapper">
+                                    <input type="checkbox" id="setting-audio-enabled" checked>
+                                    <label for="setting-audio-enabled" class="switch-label">Enable Audio Siren on High Noise Alert</label>
+                                </div>
+                                <span class="form-hint">Uses Web Audio API to play a short dual-tone alert once per threshold crossing.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="setting-audio-pitch">Alert Tone Frequency:</label>
+                                <select id="setting-audio-pitch" class="form-select">
+                                    <option value="880" selected>880 Hz (High Pitch Siren)</option>
+                                    <option value="660">660 Hz (Standard Pitch Chime)</option>
+                                    <option value="440">440 Hz (Low Warning Tone)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-actions-inline">
+                                <button class="action-btn secondary-btn" id="btn-test-audio">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                    </svg>
+                                    <span>Test Alert Audio</span>
+                                </button>
+                                <button class="action-btn primary-btn" id="btn-save-settings">Save Thresholds</button>
+                                <button class="action-btn ghost-btn" id="btn-reset-settings">Reset to Defaults</button>
+                            </div>
+                            <div class="save-toast-msg" id="settings-save-toast" style="display: none;">
+                                Settings saved successfully!
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hardware & Telemetry Specs Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <span class="card-eyebrow">Hardware Configuration</span>
+                                <h2>ESP32 &amp; Sensor Architecture</h2>
+                            </div>
+                        </div>
+
+                        <div class="detail-spec-list">
+                            <div class="spec-row">
+                                <span class="spec-label">Microcontroller Board</span>
+                                <strong class="spec-val">ESP32 Dev Module (NodeMCU-32S)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Microphone Module</span>
+                                <strong class="spec-val">MAX4466 Electret Microphone Amp</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Analog Input Pin</span>
+                                <strong class="spec-val highlight-blue">GPIO 34 (ADC1 Channel 6)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Sampling Window</span>
+                                <strong class="spec-val">50 ms (20 Hz equivalent period)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Telemetry Refresh Rate</span>
+                                <strong class="spec-val">2.0 seconds (HTTP POST)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Watchdog Timeout</span>
+                                <strong class="spec-val">6.0 seconds (Signal Loss Detector)</strong>
+                            </div>
+                            <div class="spec-row">
+                                <span class="spec-label">Backend Telemetry URL</span>
+                                <strong class="spec-val"><code>/api/readings</code></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <p>Noise Pollution Monitoring System &bull; ESP32 + MAX4466 (GPIO 34) &bull; LOW (&lt;50 dB) &bull; MEDIUM (50–70 dB) &bull; HIGH (&gt;70 dB Alert)</p>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
