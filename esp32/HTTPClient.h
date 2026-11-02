@@ -12,6 +12,8 @@ public:
     bool begin(const String& url) { return true; }
     bool begin(WiFiClientSecure& client, const char* url) { return true; }
     bool begin(WiFiClientSecure& client, const String& url) { return true; }
+    void setTimeout(int timeoutMs) {}
+    void setReuse(bool reuse) {}
     void addHeader(const String& name, const String& value) {}
     void addHeader(const char* name, const char* value) {}
     int POST(const String& payload) { return 201; }
