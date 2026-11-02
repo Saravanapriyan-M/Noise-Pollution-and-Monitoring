@@ -13,6 +13,7 @@ from typing import Optional, List
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI(
@@ -175,10 +176,65 @@ async def get_history():
     return list(readings_history)
 
 
-# Mount frontend static files so dashboard is accessible directly at http://localhost:8000/
-frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
-if os.path.exists(frontend_dir):
-    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+def find_static_dir() -> Optional[str]:
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "public"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend"),
+        os.path.join(os.getcwd(), "public"),
+        os.path.join(os.getcwd(), "frontend"),
+    ]
+    for c in candidates:
+        if os.path.exists(c) and os.path.exists(os.path.join(c, "index.html")):
+            return c
+    return None
+
+# Direct routes for root and assets (ensures Vercel and local always load index.html)
+@app.get("/", include_in_schema=False)
+async def serve_index():
+    s_dir = find_static_dir()
+    if s_dir:
+        index_file = os.path.join(s_dir, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+    return {"status": "Noise Pollution Monitoring System API is running."}
+
+@app.get("/style.css", include_in_schema=False)
+async def serve_style():
+    s_dir = find_static_dir()
+    if s_dir:
+        css_file = os.path.join(s_dir, "style.css")
+        if os.path.exists(css_file):
+            return FileResponse(css_file, media_type="text/css")
+    raise HTTPException(status_code=404, detail="File not found")
+
+@app.get("/app.js", include_in_schema=False)
+async def serve_app_js():
+    s_dir = find_static_dir()
+    if s_dir:
+        js_file = os.path.join(s_dir, "app.js")
+        if os.path.exists(js_file):
+            return FileResponse(js_file, media_type="application/javascript")
+    raise HTTPException(status_code=404, detail="File not found")
+
+# Support routes without /api prefix if Vercel function strips /api
+@app.get("/readings", response_model=List[Reading], include_in_schema=False)
+async def get_history_no_prefix():
+    return await get_history()
+
+@app.get("/readings/latest", response_model=LatestReadingResponse, include_in_schema=False)
+async def get_latest_reading_no_prefix():
+    return await get_latest_reading()
+
+@app.post("/readings", status_code=status.HTTP_201_CREATED, include_in_schema=False)
+async def post_sensor_reading_no_prefix(data: SensorInput):
+    return await post_sensor_reading(data)
+
+# Mount frontend static files directory
+frontend_dir = find_static_dir()
+if frontend_dir:
+    app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 if __name__ == "__main__":
     import uvicorn
