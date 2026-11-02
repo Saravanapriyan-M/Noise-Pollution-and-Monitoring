@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "*.ino": "cpp"
+    },
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}",
+        "-I=${workspaceFolder}/include",
+        "-I=${workspaceFolder}/esp32/include",
+        "-I=${workspaceFolder}/esp32"
+    ],
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/esp32/include",
+        "${workspaceFolder}/esp32"
+    ],
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json"
+}

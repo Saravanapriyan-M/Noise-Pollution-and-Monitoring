@@ -1,0 +1,15 @@
+CompileFlags:
+  CompilationDatabase: "."
+  Add:
+    - -xc++
+    - -std=c++17
+    - -Iinclude
+    - -Iesp32
+    - -Iesp32/include
+    - -DARDUINO=10819
+    - -DESP32
+Diagnostics:
+  Suppress:
+    - "pp_file_not_found"
+    - "drv_unknown_argument"
+

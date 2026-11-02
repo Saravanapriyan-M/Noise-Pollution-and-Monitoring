@@ -1,0 +1,13 @@
+[
+  {
+    "directory": "C:/Users/sarav/Desktop/noise",
+    "command": "clang++ -xc++ -std=c++17 -Iinclude -Iesp32 -Iesp32/include -DARDUINO=10819 -DESP32 -c esp32/esp32_max4466.ino -o esp32/esp32_max4466.o",
+    "file": "esp32/esp32_max4466.ino"
+  },
+  {
+    "directory": "C:/Users/sarav/Desktop/noise",
+    "command": "clang++ -xc++ -std=c++17 -Iinclude -Iesp32 -Iesp32/include -DARDUINO=10819 -DESP32 -c esp32/esp32.ino -o esp32/esp32.o",
+    "file": "esp32/esp32.ino"
+  }
+]
+
