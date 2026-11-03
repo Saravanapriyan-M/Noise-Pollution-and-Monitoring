@@ -55,8 +55,10 @@ MAX_HISTORY_SIZE = 500
 readings_history: deque[Reading] = deque(maxlen=MAX_HISTORY_SIZE)
 last_received_time: Optional[datetime] = None
 
-# Timeout threshold in seconds: if no reading arrives within 6 seconds, sensor is marked Disconnected
-SENSOR_TIMEOUT_SECONDS = 6.0
+# Timeout threshold in seconds: if no reading arrives within 25 seconds, sensor is marked Disconnected
+# Note: In cloud/serverless environments (Vercel), network latency, TLS handshakes and serverless cold starts
+# require a generous timeout window (25s) to prevent intermittent false disconnection alerts.
+SENSOR_TIMEOUT_SECONDS = 25.0
 
 
 def calculate_estimated_db(rms: float) -> float:
@@ -129,10 +131,13 @@ async def post_sensor_reading(data: SensorInput):
 
 
 @app.get("/api/readings/latest", response_model=LatestReadingResponse)
-async def get_latest_reading():
+async def get_latest_reading(response: Response):
     """
     Endpoint for Dashboard to fetch the latest reading and sensor connectivity state.
     """
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+
     connected = is_sensor_connected()
 
     if not readings_history:
@@ -155,7 +160,7 @@ async def get_latest_reading():
             rms=latest.rms,
             status=latest.status,
             timestamp=latest.timestamp,
-            message=f"No Sensor Data. Signal lost ({elapsed}s since last reading). Check ESP32 power and WiFi."
+            message=f"No Sensor Data. Signal delayed ({elapsed}s since last reading). Check ESP32 power and WiFi."
         )
 
     return LatestReadingResponse(
@@ -169,10 +174,12 @@ async def get_latest_reading():
 
 
 @app.get("/api/readings", response_model=List[Reading])
-async def get_history():
+async def get_history(response: Response):
     """
     Endpoint for Dashboard to fetch history data for the line graph.
     """
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
     return list(readings_history)
 
 

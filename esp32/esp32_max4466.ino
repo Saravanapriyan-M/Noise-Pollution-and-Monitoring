@@ -154,6 +154,6 @@ void loop() {
     WiFi.reconnect();
   }
 
-  // Send every 2 seconds
-  delay(2000);
+  // 1.5s delay + HTTP POST time yields a smooth ~2.5s update cadence
+  delay(1500);
 }

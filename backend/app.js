@@ -661,26 +661,28 @@ function updateStatusIndicators(connected, customMsg = null) {
     // Global Disconnected Banner
     if (!connected) {
         disconnectedBannerEl.style.display = 'flex';
-        disconnectedMsgEl.textContent = customMsg || 'ESP32 is offline or disconnected. Telemetry signal lost. Please check ESP32 power supply, WiFi connection, and GPIO34 MAX4466 wiring.';
+        disconnectedMsgEl.textContent = customMsg || 'ESP32 is offline or signal delayed. Telemetry pending. Please check ESP32 power supply, WiFi connection, and GPIO34 MAX4466 wiring.';
         highNoiseBannerEl.style.display = 'none';
 
-        // Set displays to No Sensor Data
-        overviewCurrentDbEl.textContent = 'No Sensor Data';
-        overviewCurrentDbEl.classList.add('no-data');
-        overviewDbUnitEl.style.display = 'none';
+        // Only blank out numeric displays if we have NEVER received any valid telemetry yet
+        if (totalPacketsReceived === 0) {
+            overviewCurrentDbEl.textContent = 'No Sensor Data';
+            overviewCurrentDbEl.classList.add('no-data');
+            overviewDbUnitEl.style.display = 'none';
 
-        overviewCurrentRmsEl.textContent = 'No Sensor Data';
-        overviewCurrentRmsEl.classList.add('no-data');
-        overviewRmsUnitEl.style.display = 'none';
+            overviewCurrentRmsEl.textContent = 'No Sensor Data';
+            overviewCurrentRmsEl.classList.add('no-data');
+            overviewRmsUnitEl.style.display = 'none';
 
-        overviewNoiseBadgeEl.textContent = 'NO DATA';
-        overviewNoiseBadgeEl.className = 'noise-status-badge status-unknown';
-        overviewScaleIndicatorEl.style.width = '0%';
+            overviewNoiseBadgeEl.textContent = 'NO DATA';
+            overviewNoiseBadgeEl.className = 'noise-status-badge status-unknown';
+            overviewScaleIndicatorEl.style.width = '0%';
 
-        liveDbValEl.textContent = '--';
-        liveStatusBadgeEl.textContent = 'SENSOR DISCONNECTED';
-        liveStatusBadgeEl.className = 'live-status-pill status-unknown';
-        liveAudioMeterFillEl.style.width = '0%';
+            liveDbValEl.textContent = '--';
+            liveStatusBadgeEl.textContent = 'SENSOR DISCONNECTED';
+            liveStatusBadgeEl.className = 'live-status-pill status-unknown';
+            liveAudioMeterFillEl.style.width = '0%';
+        }
     } else {
         disconnectedBannerEl.style.display = 'none';
         overviewCurrentDbEl.classList.remove('no-data');
@@ -858,30 +860,23 @@ setInterval(() => {
 // =============================================================================
 async function fetchLatestReading() {
     try {
-        const res = await fetch(`${API_BASE}/api/readings/latest`, { cache: 'no-store' });
+        const res = await fetch(`${API_BASE}/api/readings/latest?_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
 
-        // 1. Check Disconnected State from Backend
-        if (data.sensor_status === 'Disconnected') {
-            updateStatusIndicators(false, data.message || 'No Sensor Data. ESP32 is offline.');
-            if (data.timestamp) {
-                headerLastUpdatedTextEl.textContent = formatTime(data.timestamp);
-            }
-            return;
-        }
-
-        // 2. Sensor is Connected
-        updateStatusIndicators(true);
-
         const dbVal = data.db !== null && data.db !== undefined ? Number(data.db) : null;
         const rmsVal = data.rms !== null && data.rms !== undefined ? Number(data.rms) : null;
 
+        // 1. If completely empty (no sensor data has ever been received)
         if (dbVal === null) {
-            updateStatusIndicators(false, 'No Sensor Data available.');
+            updateStatusIndicators(false, data.message || 'No Sensor Data. Awaiting ESP32 transmission.');
             return;
         }
+
+        // 2. Update connectivity status indicators
+        const isConnected = (data.sensor_status === 'Connected');
+        updateStatusIndicators(isConnected, isConnected ? null : (data.message || 'ESP32 signal delayed. Reconnecting...'));
 
         const classification = classifyNoise(dbVal);
         const formattedT = formatTime(data.timestamp);
@@ -889,6 +884,9 @@ async function fetchLatestReading() {
 
         // --- OVERVIEW UPDATE ---
         overviewCurrentDbEl.textContent = dbVal.toFixed(1);
+        overviewCurrentDbEl.classList.remove('no-data');
+        overviewDbUnitEl.style.display = 'inline';
+
         const scalePct = Math.max(0, Math.min(100, ((dbVal - 30) / (100 - 30)) * 100));
         overviewScaleIndicatorEl.style.width = `${scalePct}%`;
         overviewNoiseBadgeEl.textContent = classification.label;
@@ -896,6 +894,8 @@ async function fetchLatestReading() {
 
         if (rmsVal !== null) {
             overviewCurrentRmsEl.textContent = rmsVal.toFixed(4);
+            overviewCurrentRmsEl.classList.remove('no-data');
+            overviewRmsUnitEl.style.display = 'inline';
             rmsCurrentValEl.textContent = rmsVal.toFixed(4);
         }
 
@@ -931,7 +931,7 @@ async function fetchLatestReading() {
 // =============================================================================
 async function fetchHistory() {
     try {
-        const res = await fetch(`${API_BASE}/api/readings`, { cache: 'no-store' });
+        const res = await fetch(`${API_BASE}/api/readings?_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
 
         const history = await res.json();
